@@ -11,6 +11,7 @@ const common = {
     'progress',
     'json:reports/cucumber-report.json',
     'html:reports/cucumber-report.html',
+    './utils/allure-reporter.js',
   ],
   formatOptions: {
     snippetInterface: 'async-await'

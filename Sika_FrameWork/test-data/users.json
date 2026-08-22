@@ -1,18 +1,18 @@
 {
   "users": [
     {
-      "username": "testuser1",
-      "password": "password123",
-      "firstName": "Test",
+      "username": "democsr",
+      "password": "crmsfa",
+      "firstName": "Test1",
       "lastName": "User1",
-      "email": "testuser1@example.com"
+      "companyName": "Testleaf"
     },
     {
-      "username": "testuser2",
-      "password": "password456",
+      "username": "democsr2",
+      "password": "crmsfa",
       "firstName": "Test",
       "lastName": "User2",
-      "email": "testuser2@example.com"
+      "companyName": "Qeagle"
     }
   ]
 }

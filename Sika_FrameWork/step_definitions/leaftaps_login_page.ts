@@ -9,7 +9,7 @@ const getWrapper = (world: any) => new PlaywrightWrapper(world.page, world.conte
 
          Given('Load the Leaftaps login page', async function () {
                 const wrapper = getWrapper(this);
-             await wrapper.navigateTo(BASE_URL);
+             await wrapper.navigateTo(process.env.BASE_URL as string);
          });
 
          When('Enter the username as {string}', async function (Username:string) {

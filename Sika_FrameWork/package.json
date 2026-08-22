@@ -8,8 +8,9 @@
     "test:firefox": "cucumber-js --profile firefox",
     "test:webkit": "cucumber-js --profile webkit",
     "test:msedge": "cucumber-js --profile msedge",
-    "allure:generate": "allure generate reports --clean -o allure-report",
-    "allure:open": "allure open allure-report"
+    "report:generate": "node utils/report-generator.js",
+    "allure:generate": "node utils/allure-cli.js generate reports/allure-results --clean -o allure-report",
+    "allure:open": "node utils/allure-cli.js open allure-report"
   },
   "dependencies": {
     "@cucumber/messages": "^21.0.0",

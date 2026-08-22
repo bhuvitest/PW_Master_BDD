@@ -10,7 +10,6 @@
     "outDir": "./dist", // Output directory for compiled files
     "skipLibCheck": true, // Skip type checking for declaration files
     "forceConsistentCasingInFileNames": true, // Enforce consistent casing in imports
-    "ignoreDeprecations": "6.0", // Silence deprecation warnings for TypeScript 6.x
     "paths": {
       "*": [
         "node_modules/*"

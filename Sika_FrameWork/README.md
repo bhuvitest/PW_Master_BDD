@@ -79,6 +79,16 @@ npm run allure:generate
 npm run allure:open
 ```
 
+Allure requires Java. On Windows, configure the installed JDK 21 once in
+PowerShell, then open a new terminal:
+
+```powershell
+[Environment]::SetEnvironmentVariable('JAVA_HOME', 'C:\Program Files\Java\jdk-21', 'User')
+[Environment]::SetEnvironmentVariable('Path', "$([Environment]::GetEnvironmentVariable('Path', 'User'));%JAVA_HOME%\bin", 'User')
+```
+
+Verify the setup with `java -version` before running the Allure commands.
+
 ## Project Structure
 
 ```
