@@ -13,7 +13,6 @@
     "allure:open": "node utils/allure-cli.js open allure-report"
   },
   "dependencies": {
-    "@cucumber/messages": "^21.0.0",
     "@faker-js/faker": "^9.8.0",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.0.3",
@@ -25,14 +24,10 @@
   "devDependencies": {
     "@cucumber/cucumber": "^12.7.0",
     "@playwright/test": "^1.56.1",
-    "@types/chai": "^4.3.4",
     "@types/fs-extra": "^11.0.1",
     "@types/node": "^18.13.0",
     "allure-commandline": "^2.38.0",
     "allure-cucumberjs": "^2.15.1",
-    "chai": "^4.3.7",
-    "cucumber-html-reporter": "^6.0.0",
-    "cucumberjs-allure2-reporter": "^1.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

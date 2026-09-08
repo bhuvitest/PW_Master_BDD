@@ -6,9 +6,13 @@
 import { Before, After, AfterStep, BeforeAll, AfterAll, Status, setDefaultTimeout } from '@cucumber/cucumber';
 import { chromium, firefox, webkit } from '@playwright/test';
 import fs from 'fs-extra';
-import { STEP_TIMEOUT, browserOptions, screenshotOptions, videoOptions, traceOptions } from '../config/config';
+import { BROWSER, STEP_TIMEOUT, browserOptions, screenshotOptions, videoOptions, traceOptions } from '../config/config';
 import { createLogger } from '../utils/logger';
 import { CustomWorld } from './custom-world';
+import { PlaywrightWrapper } from '../utils/wrapper';
+import { AccountPage } from '../pages/account.page';
+import { LeadsPage } from '../pages/leads.page';
+import { LoginPage } from '../pages/login.page';
 
 // Initialize logger for this module
 const logger = createLogger('hooks');
@@ -26,6 +30,7 @@ BeforeAll(async function () {
   await fs.ensureDir('./reports/videos');       // Directory for video recordings
   await fs.ensureDir('./reports/traces');       // Directory for Playwright traces
   await fs.emptyDir('./reports/allure-results'); // Keep each Allure report limited to the current run
+  await fs.ensureDir('./logs');                  // Directory for log files
   logger.info('Test environment setup complete');
 });
 
@@ -55,8 +60,7 @@ Before(async function (this: CustomWorld, scenario) {
   this.testName = scenario.pickle.name.replace(/\s+/g, '-');
   logger.info(`Starting scenario: ${this.testName}`);
 
-  // Determine which browser to use - either from parameters or default to chrome
-  const browserType = this.parameters.browser || "chrome";
+  const browserType = this.parameters.browser || BROWSER;
   logger.info(`Using browser: ${browserType}`);
   
   // Launch appropriate browser based on browser type parameter
@@ -82,13 +86,10 @@ Before(async function (this: CustomWorld, scenario) {
       throw new Error(`Unsupported browser type: ${browserType}`);
   }
 
-  // Get browser type for viewport configuration
-  const browser: any = this.parameters.browser;
-  // Determine if viewport should be null (used for maximizing window in certain browsers)
-  const shouldSetViewportNull = ["chrome", "msedge", "chromium", "firefox"].includes(browser);
+  const shouldSetViewportNull = ["chrome", "msedge", "chromium", "firefox"].includes(browserType.toLowerCase());
 
   // Configure browser context options
-  const contextOptions: any = {
+  const contextOptions = {
     // Configure video recording based on config settings
     recordVideo: videoOptions.enabled ? { dir: videoOptions.path } : undefined,
     // Set viewport to null for specific browsers to enable maximized window
@@ -108,16 +109,33 @@ Before(async function (this: CustomWorld, scenario) {
 
   // Create a new page in the browser context
   this.page = await this.context.newPage();
+  this.wrapper = new PlaywrightWrapper(this.page, this.context);
+  this.loginPage = new LoginPage(this.wrapper);
+  this.accountPage = new AccountPage(this.wrapper);
+  this.leadsPage = new LeadsPage(this.wrapper);
 });
 
-// Capture the browser state immediately after each step so Allure displays it with that step.
-AfterStep(async function (this: CustomWorld, { pickleStep }) {
-  if (!this.page || !screenshotOptions.takeOnSuccess) {
+AfterStep(async function (this: CustomWorld, { pickleStep, result }): Promise<void> {
+  if (!this.page) {
     return;
   }
 
-  const stepName = pickleStep.text.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 80);
-  const screenshotPath = `${screenshotOptions.path}${this.testName}-${stepName}-${Date.now()}.png`;
+  const stepPassed = result?.status === Status.PASSED;
+  const stepFailed = result?.status === Status.FAILED;
+  const shouldCaptureScreenshot = stepFailed
+    ? screenshotOptions.takeOnFailure
+    : stepPassed && screenshotOptions.takeOnSuccess;
+
+  if (!shouldCaptureScreenshot) {
+    return;
+  }
+
+  const stepName = pickleStep.text
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+  const suffix = stepFailed ? 'failure' : 'success';
+  const screenshotPath = `${screenshotOptions.path}${this.testName}-${stepName}-${Date.now()}-${suffix}.png`;
   const screenshot = await this.page.screenshot({ path: screenshotPath, fullPage: false });
 
   this.attach(screenshot, 'image/png');
@@ -136,13 +154,17 @@ AfterStep(async function (this: CustomWorld, { pickleStep }) {
 After(async function (this: CustomWorld, scenario) {
   logger.info(`Finishing scenario: ${this.testName}`);
 
-  // Take screenshot if scenario failed and screenshot on failure is enabled
-  if (scenario.result?.status === Status.FAILED) {
-    if (this.page && screenshotOptions.takeOnFailure) {
+  const scenarioFailed = scenario.result?.status === Status.FAILED;
+  const shouldCaptureScreenshot = scenarioFailed
+    ? screenshotOptions.takeOnFailure
+    : scenario.result?.status === Status.PASSED && screenshotOptions.takeOnSuccess;
+
+  if (this.page && shouldCaptureScreenshot) {
       // Generate timestamp for unique filename
       const timeStamp = Date.now();
       // Create screenshot path with scenario name and timestamp
-      const screenshotPath = `${screenshotOptions.path}${this.testName}${timeStamp}-failure.png`;
+      const suffix = scenarioFailed ? 'failure' : 'success';
+      const screenshotPath = `${screenshotOptions.path}${this.testName}-${timeStamp}-${suffix}.png`;
       
       // Take screenshot and save to file
       await this.page.screenshot({ path: screenshotPath, fullPage: false });
@@ -152,7 +174,6 @@ After(async function (this: CustomWorld, scenario) {
       this.attach(screenshot, 'image/png');
 
       logger.info(`Screenshot saved to: ${screenshotPath}`);
-    }
   }
 
   // Save trace file if tracing is enabled
