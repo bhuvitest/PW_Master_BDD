@@ -1,9 +1,13 @@
 import winston from 'winston';
+import fs from 'fs-extra';
+import { LOG_LEVEL } from '../config/config';
+
+fs.ensureDirSync('logs');
 
 // Create a custom logger
 export function createLogger(module: string) {
   return winston.createLogger({
-    level: process.env.LOG_LEVEL || 'info',
+    level: LOG_LEVEL,
     format: winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       winston.format.printf(({ timestamp, level, message }) => {

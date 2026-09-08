@@ -1,0 +1,365 @@
+================================================================================
+                    INTERVIEW QUESTION 1: EXPLAIN YOUR FRAMEWORK
+================================================================================
+
+Q: Explain about your framework? (2-3 mins)
+
+INTERVIEW-READY ANSWER:
+-------------------------------------------------------------------------------
+I have worked with a hybrid Playwright automation framework built with
+TypeScript and Cucumber BDD. Cucumber runs Gherkin feature files, while
+Playwright performs browser automation on Chrome, Microsoft Edge, Firefox, and
+WebKit.
+
+The framework follows the Page Object Model. Each application page has a class
+with private locators and business-level actions. The step definitions are
+typed with CustomWorld and only map Gherkin steps to page-object methods. This
+keeps application selectors out of the steps and makes the tests easier to
+maintain.
+
+The registered CustomWorld extends Cucumber's World and stores scenario-level
+state: Browser, BrowserContext, Page, scenario metadata, one PlaywrightWrapper,
+and the page objects. The wrapper centralizes genuinely reusable operations
+such as navigation, waits, text retrieval, dropdowns, tab handling, keyboard
+actions, screenshots, logging, and framework timeouts.
+
+Configuration is externalized through dotenv and config.ts. BASE_URL, BROWSER,
+HEADLESS, VIDEO_ENABLED, TRACE_ENABLED, and LOG_LEVEL are read from .env and
+converted to the correct types. Test data is handled separately: data-reader.ts
+reads CSV, JSON, and Excel files, while fakerUtils.ts generates dynamic data.
+
+Winston writes module-based logs to both the console and logs/test.log. Hooks
+create the required artifact directories, launch an isolated browser context
+for each scenario, configure video and tracing, capture configured screenshots,
+attach artifacts, close the browser, and log execution duration.
+
+For reporting, Cucumber writes reports/cucumber-report.json and the
+multiple-cucumber-html-reporter creates the HTML report. The registered custom
+Allure formatter writes reports/allure-results, and the Allure CLI converts
+those results into allure-report. The current GitHub workflow runs the
+Playwright example test; Cucumber can be added using the same npm scripts.
+
+
+================================================================================
+                    INTERVIEW QUESTION 2: EXECUTION FLOW
+================================================================================
+
+Q: Explain about your framework execution flow?
+
+EXECUTION FLOW:
+-------------------------------------------------------------------------------
+Cucumber profile
+    -> ts-node/register loads TypeScript
+    -> hooks, CustomWorld, and step definitions are loaded
+    -> CustomWorld is created for each scenario
+    -> BeforeAll creates screenshots, videos, traces, Allure, and log folders
+    -> Before records scenario metadata and chooses the browser
+    -> Browser is launched
+    -> BrowserContext is created with configured video options
+    -> Playwright tracing starts when enabled
+    -> Page, PlaywrightWrapper, and page objects are created once
+    -> Feature steps match typed Given/When/Then definitions
+    -> Steps call page-object business methods
+    -> Page objects use private locators and Playwright
+    -> After checks scenario status and screenshot settings
+    -> Trace is stopped, saved, and attached when enabled
+    -> Screenshot is captured according to takeOnFailure/takeOnSuccess
+    -> Browser is closed and duration is logged
+    -> AfterAll performs final cleanup
+
+REPORTING FLOW:
+-------------------------------------------------------------------------------
+Cucumber
+    -> reports/cucumber-report.json
+    -> npm run report:generate
+    -> reports/cucumber-html-report-<timestamp>
+
+Cucumber
+    -> custom Allure formatter
+    -> AllureRuntime
+    -> reports/allure-results
+    -> npm run allure:generate
+    -> allure-report
+    -> npm run allure:open
+
+INTERVIEW-READY ANSWER:
+-------------------------------------------------------------------------------
+The execution starts with BeforeAll, which prepares the artifact and log
+directories. Before each scenario, Cucumber creates the registered
+CustomWorld. The Before hook captures the scenario name and start time,
+determines the browser from the profile or .env, launches the browser, creates
+an isolated BrowserContext and Page, and starts video and tracing according to
+configuration. It then creates one wrapper and the Login, Account, and Leads
+page objects for that scenario.
+
+The feature file executes typed step definitions. Each step delegates business
+behavior to a page object, which owns its private locators and uses Playwright
+directly or the reusable wrapper where appropriate. After the scenario, the
+After hook captures a success or failure screenshot only when configured, stops
+and attaches the trace, closes the browser, and logs the duration. Cucumber
+produces JSON and HTML output, while the Allure formatter produces Allure
+results for the separate Allure report pipeline.
+
+
+================================================================================
+                    INTERVIEW QUESTION 3: OOP STRUCTURE
+================================================================================
+
+Q: What OOP structure is implemented in your framework?
+
+OOP IMPLEMENTATION:
+-------------------------------------------------------------------------------
+1. INHERITANCE
+   CustomWorld extends Cucumber's World.
+   AllureReporter extends CucumberJSAllureFormatter.
+
+2. ABSTRACTION
+   PlaywrightWrapper hides common Playwright interaction details behind
+   reusable methods such as navigateTo, click, fill, getText, dropdown
+   handling, tab switching, and keyboardPress.
+
+3. ENCAPSULATION
+   LoginPage, AccountPage, and LeadsPage keep page-specific locators private
+   and expose business actions. Step definitions do not access selectors
+   directly. CustomWorld owns the scenario's browser, context, page, wrapper,
+   and page-object state.
+
+4. POLYMORPHISM
+   There is no deliberate method overloading or overriding in the current
+   implementation. Browser profiles select different Playwright browser
+   implementations through the common hook flow.
+
+INTERVIEW-READY ANSWER:
+-------------------------------------------------------------------------------
+Yes. The framework uses inheritance because CustomWorld extends Cucumber's
+World and AllureReporter extends the Allure formatter. It uses abstraction
+through PlaywrightWrapper, which provides reusable browser operations without
+putting common Playwright configuration in every step. It uses encapsulation
+because each page object hides its private locators and exposes business
+methods such as enterUsername and clickLogin. The current framework does not
+deliberately use method overloading or overriding, so polymorphism is limited.
+
+
+================================================================================
+                    INTERVIEW QUESTION 4: INSTALLATION COMMANDS
+================================================================================
+
+Q: What commands are used to install and run the framework?
+
+INSTALLATION:
+-------------------------------------------------------------------------------
+npm install
+npx playwright install
+npx tsc --noEmit
+
+VERIFY INSTALLATION:
+-------------------------------------------------------------------------------
+npx cucumber-js --version
+npx playwright --version
+npx tsc --version
+
+CONFIGURATION:
+-------------------------------------------------------------------------------
+Copy .env.example to .env and configure BASE_URL, BROWSER, HEADLESS,
+VIDEO_ENABLED, TRACE_ENABLED, and LOG_LEVEL. The .env file is ignored by Git
+and must not contain committed credentials.
+
+EXECUTION:
+-------------------------------------------------------------------------------
+npm test
+npm run test:chrome
+npm run test:msedge
+npm run test:firefox
+npm run test:webkit
+npx cucumber-js --profile chrome --tags "@CreateLead"
+npx cucumber-js --parallel 4
+
+REPORTS:
+-------------------------------------------------------------------------------
+npm run report:generate
+npm run allure:generate
+npm run allure:open
+
+
+================================================================================
+                              FRAMEWORK TYPE
+================================================================================
+
+Type: Hybrid Framework
+(Cucumber BDD + Data Driven Testing + Page Object Model + Allure Reporting)
+
+
+================================================================================
+                    A) CUCUMBER.JS
+================================================================================
+
+cucumber.js defines the common Cucumber configuration and four browser
+profiles: chrome, msedge, firefox, and webkit. Each profile loads
+ts-node/register, step_definitions/**/*.ts, hooks/**/*.ts, the progress
+formatter, the Cucumber JSON and HTML formatters, and
+utils/allure-reporter.js.
+
+worldParameters.browser passes the selected browser into CustomWorld. The
+default profile uses BROWSER from the dotenv-backed config. formatOptions uses
+snippetInterface: async-await for Playwright-compatible generated snippets.
+
+The spread syntax (...common) keeps shared configuration in one place while
+allowing each profile to provide its browser parameter.
+
+
+================================================================================
+                    B) CUSTOM-WORLD.TS
+================================================================================
+
+CustomWorld is a class registered with setWorldConstructor(CustomWorld). It
+extends World<WorldParameters> and is strongly typed. It contains:
+
+  browser: Browser | null
+  context: BrowserContext | null
+  page: Page | null
+  testName: string
+  startTime: Date
+  parameters: WorldParameters
+  wrapper: PlaywrightWrapper | null
+  loginPage, accountPage, and leadsPage
+
+The hooks populate this scenario state. Every step uses
+async function (this: CustomWorld), preserving Cucumber's function context.
+
+
+================================================================================
+                    C) HOOKS.TS
+================================================================================
+
+BeforeAll runs once and creates report, artifact, and log directories. It also
+clears reports/allure-results for the current run.
+
+Before runs before every scenario. It records the scenario name and start time,
+selects the browser from worldParameters or BROWSER, launches the matching
+Playwright browser, creates BrowserContext and Page, configures video and
+tracing, and creates one wrapper plus the page objects.
+
+After checks the actual scenario status. A failed scenario is captured only
+when takeOnFailure is true; a passed scenario is captured only when
+takeOnSuccess is true. It then stops and saves tracing when enabled, attaches
+artifacts, closes the browser, and logs the duration.
+
+AfterAll performs final environment cleanup. Browser resources are owned by
+the scenario and are closed in After.
+
+
+================================================================================
+                    D) REPORT-GENERATOR.JS
+================================================================================
+
+report-generator.js uses multiple-cucumber-html-reporter. It consumes exactly
+reports/cucumber-report.json, copies it to a temporary JSON directory required
+by the reporter, and generates
+reports/cucumber-html-report-<timestamp>.
+
+The report metadata identifies the local test machine and reads the browser
+name from BROWSER. It does not claim a fixed browser or operating-system
+version.
+
+
+================================================================================
+                    E) LOGGER.TS
+================================================================================
+
+logger.ts creates a module-based Winston logger. LOG_LEVEL comes from config.ts,
+which loads it from .env. The logger writes timestamped messages to the console
+and logs/test.log. The logs directory is ensured before the file transport is
+created.
+
+Example module names include hooks, wrapper, and data-reader. This makes the
+source of a framework message easy to identify.
+
+
+================================================================================
+                    F) DATA-READER.TS AND FAKERUTILS.TS
+================================================================================
+
+data-reader.ts is responsible only for reading external data:
+
+  readCsvData()   -> CSV files using csv-parser
+  readJsonData()  -> JSON files using the Node file system
+  readExcelData() -> Excel files using ExcelJS
+
+fakerUtils.ts is separate and generates dynamic values with Faker. Reading
+test data and generating test data are intentionally not mixed.
+
+
+================================================================================
+                    G) ALLURE-REPORTER.JS
+================================================================================
+
+The custom AllureReporter extends CucumberJSAllureFormatter and creates an
+AllureRuntime whose results directory is reports/allure-results. It is loaded
+in every Cucumber profile through cucumber.js, so result files are produced by
+the Cucumber execution itself.
+
+The complete flow is:
+
+  Cucumber -> AllureReporter -> AllureRuntime -> reports/allure-results
+  -> allure-commandline -> allure-report
+
+
+================================================================================
+                    H) PAGE OBJECT MODEL
+================================================================================
+
+The pages directory contains login.page.ts, account.page.ts, and leads.page.ts.
+Each class declares private locator properties and exposes business actions.
+Selectors such as #username and #createLeadForm_companyName are owned by the
+corresponding page object, never by step definitions.
+
+The design is:
+
+  Feature -> Step Definition -> Page Object -> PlaywrightWrapper/Playwright
+
+
+================================================================================
+                    I) WRAPPER.TS
+================================================================================
+
+PlaywrightWrapper is created once per scenario with the current Page and
+BrowserContext. It provides reusable framework-level operations including:
+
+  navigateTo, getTitle, getCurrentUrl
+  click, doubleClick, fill
+  isVisible, waitForVisible, waitForHidden
+  getText, getAllTexts
+  selectByValue, selectByLabel
+  switchToTab, takeScreenshot, executeScript
+  refresh, goBack, goForward, keyboardPress
+
+It applies DEFAULT_TIMEOUT where appropriate and logs through Winston. It does
+not own application-specific locators. When a tab is switched, the wrapper's
+current Page is updated so wrapper and page-object state do not silently point
+to different pages.
+
+
+================================================================================
+                    J) STEP DEFINITIONS
+================================================================================
+
+Step definitions use regular functions, never arrow functions, because
+Cucumber supplies the World through this. Each step declares:
+
+  async function (this: CustomWorld, ...)
+
+The steps receive Gherkin parameters, check that their page object is
+initialized, and call business methods such as:
+
+  this.loginPage.enterUsername(username)
+  this.loginPage.enterPassword(password)
+  this.loginPage.clickLogin()
+
+They do not create a new wrapper for every step, use any, or contain
+application-specific CSS/XPath selectors. Assertions are kept at the step
+boundary where they describe the expected business result.
+
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================

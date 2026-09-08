@@ -1,54 +1,40 @@
-import { Then, When } from "@cucumber/cucumber";
-import { PlaywrightWrapper } from "../utils/wrapper";
+import { Then, When } from '@cucumber/cucumber';
+import assert from 'node:assert/strict';
+import { CustomWorld } from '../hooks/custom-world';
 
-const getWrapper = (world: any) => new PlaywrightWrapper(world.page, world.context);
+const leadsPage = (world: CustomWorld) => {
+  if (!world.leadsPage) throw new Error('Leads page is not initialized');
+  return world.leadsPage;
+};
 
- When('Click on the Leads tab', async function () {
-              const wrapper = getWrapper(this);
-            await wrapper.click('//a[text()="Leads"]');
-         });
+When('Click on the Leads tab', async function (this: CustomWorld): Promise<void> {
+  await leadsPage(this).openLeads();
+});
 
-  
-         When('Click on the Create Lead link', async function () {
-              const wrapper = getWrapper(this);
-  await wrapper.click('//a[text()="Create Lead"]');         });
+When('Click on the Create Lead link', async function (this: CustomWorld): Promise<void> {
+  await leadsPage(this).openCreateLead();
+});
 
-         When('Enter company name as {string}', async function (compName:string) {
-              const wrapper = getWrapper(this);
-           await wrapper.fill('#createLeadForm_companyName', compName);
-         });
+When('Enter company name as {string}', async function (this: CustomWorld, companyName: string): Promise<void> {
+  await leadsPage(this).enterCompanyName(companyName);
+});
 
-          When('Enter first name as {string}', async function (fName:string) {
-              const wrapper = getWrapper(this);
-           await wrapper.fill('#createLeadForm_firstName',fName);
-         });
+When('Enter first name as {string}', async function (this: CustomWorld, firstName: string): Promise<void> {
+  await leadsPage(this).enterFirstName(firstName);
+});
 
-  
-         When('Enter last name as {string}', async function (lName:string) {
-              const wrapper = getWrapper(this);
-            
-  await wrapper.fill('#createLeadForm_lastName', lName);
-         });
+When('Enter last name as {string}', async function (this: CustomWorld, lastName: string): Promise<void> {
+  await leadsPage(this).enterLastName(lastName);
+});
 
-          When('Enter title as {string}', async function (title:string) {
-              const wrapper = getWrapper(this);
-           await wrapper.fill('#createLeadForm_generalProfTitle', title);
-         });
+When('Enter title as {string}', async function (this: CustomWorld, title: string): Promise<void> {
+  await leadsPage(this).enterTitle(title);
+});
 
+When('Click on Create Lead button', async function (this: CustomWorld): Promise<void> {
+  await leadsPage(this).create();
+});
 
-         When('Click on Create Lead button', async function () {
-              const wrapper = getWrapper(this);
-            await wrapper.click('//input[@name="submitButton"]');
-         });
-
-         Then('Verify that the title contains {string} after lead is created', async function (PageTitle:string) {
-              const wrapper = getWrapper(this);
-          const title = await wrapper.getTitle();
-          console.log(`Page title: ${title}`);
-
-          if (title.includes(PageTitle)) {
-           console.log('Title verified');
-           } else {
-          console.log('Title not verified');
-          }
-         });
+Then('Verify that the title contains {string} after lead is created', async function (this: CustomWorld, expectedTitle: string): Promise<void> {
+  assert.ok((await leadsPage(this).title()).includes(expectedTitle));
+});

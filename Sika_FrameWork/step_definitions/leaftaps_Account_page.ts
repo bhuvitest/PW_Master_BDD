@@ -1,58 +1,40 @@
-import { Then, When } from "@cucumber/cucumber";
-import { PlaywrightWrapper } from "../utils/wrapper";
-import { ac, r } from "@faker-js/faker/dist/airline-BUL6NtOJ";
+import { Then, When } from '@cucumber/cucumber';
+import assert from 'node:assert/strict';
+import { CustomWorld } from '../hooks/custom-world';
 
-const getWrapper = (world: any) => new PlaywrightWrapper(world.page, world.context);
+const accountPage = (world: CustomWorld) => {
+  if (!world.accountPage) throw new Error('Account page is not initialized');
+  return world.accountPage;
+};
 
- When('Click on the Accounts tab', async function () {
-              const wrapper = getWrapper(this);
-             await wrapper.isVisible('//a[text()="Accounts"]');          
-             await wrapper.click(`//a[text()="Accounts"]`);
-         });
+When('Click on the Accounts tab', async function (this: CustomWorld): Promise<void> {
+  await accountPage(this).openAccounts();
+});
 
-       When('Click on the Create Account button', async function () {
-              const wrapper = getWrapper(this);
-            await wrapper.click('//a[text()="Create Account"]');
-         });
+When('Click on the Create Account button', async function (this: CustomWorld): Promise<void> {
+  await accountPage(this).openCreateAccount();
+});
 
-           When('Enter account name as {string}', async function (accName:string) {
-              const wrapper = getWrapper(this);
-              const randomNum = Math.floor(1000 + Math.random() * 9000);
-              const uniqueAcc=`${accName}_${randomNum}`
-           await wrapper.fill('//input[@id="accountName"]',uniqueAcc);
-         });
+When('Enter account name as {string}', async function (this: CustomWorld, accountName: string): Promise<void> {
+  await accountPage(this).enterAccountName(accountName);
+});
 
-         When('Enter description as {string}', async function (Desc:string) {
-              const wrapper = getWrapper(this);
-           await wrapper.fill('//textarea[@name="description"]',Desc);
+When('Enter description as {string}', async function (this: CustomWorld, description: string): Promise<void> {
+  await accountPage(this).enterDescription(description);
+});
 
+When('Enter number of employees as {string}', async function (this: CustomWorld, employeeCount: string): Promise<void> {
+  await accountPage(this).enterEmployeeCount(employeeCount);
+});
 
-         });
-         When('Enter number of employees as {string}', async function (empCOunt:string) {
-              const wrapper = getWrapper(this);
-            await wrapper.fill('//input[@id="numberEmployees"]',empCOunt);
-         });
+When('Enter site name as {string}', async function (this: CustomWorld, siteName: string): Promise<void> {
+  await accountPage(this).enterSiteName(siteName);
+});
 
-          When('Enter site name as {string}', async function (site:string) {
-              const wrapper = getWrapper(this);
-           await wrapper.fill('//input[@id="officeSiteName"]',site);
-         });
+When('Click on Create Account button', async function (this: CustomWorld): Promise<void> {
+  await accountPage(this).create();
+});
 
-          When('Click on Create Account button', async function () {
-              const wrapper = getWrapper(this);
-          await wrapper.click('//input[@class="smallSubmit"]');
-         });
-
- 
-         Then('Verify that the title contains {string} after account is created', async function (PageTitle:string) {
-              const wrapper = getWrapper(this);
-              
-           const title = await wrapper.getTitle();
-          console.log("Page Title:", title);
-
-  if (title.includes(PageTitle)) {
-    console.log("✓ Title verified successfully");
-  } else {
-    console.log("✗ Title not verified");
-  }
-         });
+Then('Verify that the title contains {string} after account is created', async function (this: CustomWorld, expectedTitle: string): Promise<void> {
+  assert.ok((await accountPage(this).title()).includes(expectedTitle));
+});

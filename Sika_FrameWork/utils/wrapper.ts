@@ -1,5 +1,5 @@
-import { Page, Locator, BrowserContext } from '@playwright/test';
-import { DEFAULT_TIMEOUT} from '../config/config';
+import { Page, BrowserContext } from '@playwright/test';
+import { DEFAULT_TIMEOUT } from '../config/config';
 import { createLogger } from './logger';
 const logger = createLogger('wrapper');
 
@@ -9,7 +9,7 @@ const logger = createLogger('wrapper');
 export class PlaywrightWrapper {
 
   public page: Page;
-  public context: BrowserContext
+  public context: BrowserContext;
 
   constructor(page: Page, context: BrowserContext) {
     this.page = page;
@@ -72,7 +72,6 @@ export class PlaywrightWrapper {
    */
   async fill(selector: string, value: string): Promise<void> {
     logger.info(`Filling ${selector} with value: ${value}`);
-    await this.page.locator(selector).clear();
     await this.page.fill(selector, value, { timeout: DEFAULT_TIMEOUT });
   }
 
@@ -163,7 +162,7 @@ export class PlaywrightWrapper {
    * Switch to a tab by index
    * @param index - The tab index
    */
-  async switchToTab(index: number): Promise<void> {
+  async switchToTab(index: number): Promise<Page> {
     logger.info(`Switching to tab index: ${index}`);
     const pages = this.page.context().pages();
 
@@ -173,6 +172,7 @@ export class PlaywrightWrapper {
 
     this.page = pages[index];
     await this.page.bringToFront();
+    return this.page;
   }
 
   /**
@@ -190,7 +190,7 @@ export class PlaywrightWrapper {
    * @param args - Arguments to pass to the script
    * @returns The result of script execution
    */
-  async executeScript<T>(script: string, ...args: any[]): Promise<T> {
+  async executeScript<T>(script: string, ...args: unknown[]): Promise<T> {
     logger.info('Executing JavaScript');
     return await this.page.evaluate(script, ...args);
   }
@@ -219,9 +219,8 @@ export class PlaywrightWrapper {
     await this.page.goForward({ waitUntil: 'networkidle' });
   }
 
-  async keyBoardpress(selector: string, key: string): Promise<void> {
-    await this.page.waitForSelector(selector, { state: 'visible' });
-    await this.page.locator(selector).focus()
+  async keyboardPress(selector: string, key: string): Promise<void> {
+    await this.page.locator(selector).focus({ timeout: DEFAULT_TIMEOUT });
     await this.page.keyboard.press(key);
   }
 }
