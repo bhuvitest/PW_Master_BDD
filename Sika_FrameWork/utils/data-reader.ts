@@ -52,6 +52,50 @@ export function readJsonData(fileName: string): any {
 }
 
 /**
+ * Read a record from a named JSON collection.
+ */
+export function readJsonRecord(
+  fileName: string,
+  collectionName: string,
+  recordIndex: number
+): Record<string, unknown> {
+  if (!Number.isInteger(recordIndex) || recordIndex < 0) {
+    throw new Error(`Record index must be a non-negative integer, received ${recordIndex}`);
+  }
+
+  const data = readJsonData(fileName);
+  const collection = data?.[collectionName];
+  if (!Array.isArray(collection)) {
+    throw new Error(`JSON file "${fileName}" does not contain an array collection named "${collectionName}"`);
+  }
+
+  const record: unknown = collection[recordIndex];
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    throw new Error(`No record exists at index ${recordIndex} in collection "${collectionName}"`);
+  }
+
+  return record as Record<string, unknown>;
+}
+
+/**
+ * Replace {{field}} placeholders using scalar values from a loaded test-data record.
+ */
+export function resolveTestDataValue(value: string, record?: Record<string, unknown>): string {
+  return value.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_placeholder, field: string) => {
+    if (!record || !Object.prototype.hasOwnProperty.call(record, field)) {
+      throw new Error(`Test-data field "${field}" has not been loaded or does not exist`);
+    }
+
+    const fieldValue = record[field];
+    if (fieldValue === null || fieldValue === undefined || typeof fieldValue === 'object') {
+      throw new Error(`Test-data field "${field}" must contain a non-null scalar value`);
+    }
+
+    return String(fieldValue);
+  });
+}
+
+/**
  * Read Excel file and return specific sheet data as an array of objects
  * @param fileName - The name of the Excel file
  * @param sheetName - The name of the sheet to read (optional)

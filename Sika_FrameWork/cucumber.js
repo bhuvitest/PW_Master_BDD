@@ -1,7 +1,14 @@
 
-const browserName = process.env.BROWSER || 'msedge';
+require('dotenv').config();
+
+const browserName = process.env.BROWSER;
+const configuredTag = process.env.TAG?.trim();
+const tagExpression = configuredTag && /^[A-Za-z0-9_-]+$/.test(configuredTag)
+  ? `@${configuredTag}`
+  : configuredTag || '';
 
 const common = {
+  tags: tagExpression,
   requireModule: ['ts-node/register'],
   require: [
     'step_definitions/**/*.ts',
@@ -23,25 +30,25 @@ module.exports = {
   chrome: {
     ...common,
     worldParameters: {
-      browser: 'chrome'
+      browser: browserName || 'chrome'
     }
   },
   msedge: {
     ...common,
     worldParameters: {
-      browser: 'msedge'
+      browser: browserName || 'msedge'
     }
   },
   firefox: {
     ...common,
     worldParameters: {
-      browser: 'firefox'
+      browser: browserName || 'firefox'
     }
   },
   webkit: {
     ...common,
     worldParameters: {
-      browser: 'webkit'
+      browser: browserName || 'webkit'
     }
   },
   default: {

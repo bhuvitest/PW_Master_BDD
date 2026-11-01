@@ -26,6 +26,7 @@ playwright/.auth/
 # Cucumber and Allure generated reports
 reports/cucumber-report.html
 reports/cucumber-report.json
+reports/cucumber-html-report-*/
 reports/allure-results/
 reports/allure-report/
 reports/screenshots/

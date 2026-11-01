@@ -1,28 +1,29 @@
-import { Given, When } from '@cucumber/cucumber';
-import { BASE_URL } from '../config/config';
-import { CustomWorld } from '../hooks/custom-world';
+import { Given, When } from "@cucumber/cucumber";
+import { CustomWorld } from "../hooks/custom-world";
 
-const loginPage = (world: CustomWorld) => {
-     if (!world.loginPage) throw new Error('Login page is not initialized');
-     return world.loginPage;
+const applicationOf = (world: CustomWorld) => {
+  if (!world.application) {
+    throw new Error("Leaftaps application facade is not initialized");
+  }
+  return world.application;
 };
 
-Given('Load the Leaftaps login page', async function (this: CustomWorld): Promise<void> {
-     await loginPage(this).open(BASE_URL);
+Given("Load the Leaftaps login page", async function (this: CustomWorld) {
+  await applicationOf(this).login.openLoginPage();
 });
 
-When('Enter the username as {string}', async function (this: CustomWorld, username: string): Promise<void> {
-     await loginPage(this).enterUsername(username);
+When("Enter the username as {string}", async function (this: CustomWorld, username: string) {
+  await applicationOf(this).login.enterUsername(username, this.testData);
 });
 
-When('Enter the password as {string}', async function (this: CustomWorld, password: string): Promise<void> {
-     await loginPage(this).enterPassword(password);
+When("Enter the password as {string}", async function (this: CustomWorld, password: string) {
+  await applicationOf(this).login.enterPassword(password, this.testData);
 });
 
-When('Click on the Login button', async function (this: CustomWorld): Promise<void> {
-     await loginPage(this).clickLogin();
+When("Click on the Login button", async function (this: CustomWorld) {
+  await applicationOf(this).login.submit();
 });
 
-When('Click on CRMSFA link', async function (this: CustomWorld): Promise<void> {
-     await loginPage(this).clickCrmSfa();
+When("Click on CRMSFA link", async function (this: CustomWorld) {
+  await applicationOf(this).login.openCrm();
 });

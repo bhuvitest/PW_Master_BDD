@@ -7,7 +7,7 @@ const path = require('path');
 const currentDate = new Date();
 const timestamp = currentDate.toISOString().replace(/[:.]/g, '-');
 const reportsDir = path.join(__dirname, '../reports');
-const browserName = process.env.BROWSER || 'msedge';
+const browserName = process.env.BROWSER || 'chrome';
 
 // Check if cucumber report exists
 const cucumberReportPath = path.join(reportsDir, 'cucumber-report.json');
@@ -33,12 +33,12 @@ reporter.generate({
   metadata: {
     browser: {
       name: browserName,
-      version: '100'
+      version: process.env.BROWSER_VERSION || 'Unknown'
     },
-    device: 'Local test machine',
+    device: process.env.CI ? 'CI agent' : os.hostname(),
     platform: {
-      name: 'windows',
-      version: '10'
+      name: process.platform,
+      version: os.release()
     }
   },
   customData: {

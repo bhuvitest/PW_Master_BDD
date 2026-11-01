@@ -1,5 +1,5 @@
 import { Page, BrowserContext } from '@playwright/test';
-import { DEFAULT_TIMEOUT } from '../config/config';
+import { DEFAULT_TIMEOUT} from '../config/config';
 import { createLogger } from './logger';
 const logger = createLogger('wrapper');
 
@@ -8,8 +8,8 @@ const logger = createLogger('wrapper');
  */
 export class PlaywrightWrapper {
 
-  public page: Page;
-  public context: BrowserContext;
+  private page: Page;
+  private readonly context: BrowserContext
 
   constructor(page: Page, context: BrowserContext) {
     this.page = page;
@@ -57,6 +57,110 @@ export class PlaywrightWrapper {
   }
 
   /**
+   * Click an element by exact visible text.
+   */
+  async clickByText(text: string, exact = true): Promise<void> {
+    logger.info(`Clicking text: ${text}`);
+    await this.page.getByText(text, { exact }).click({ timeout: DEFAULT_TIMEOUT });
+  }
+
+  /**
+   * Open a popup after clicking the lookup icon and return the popup page.
+   */
+  async openPopup(selector: string, index = 0): Promise<Page> {
+    logger.info(`Opening popup at ${selector}[${index}]`);
+    const popupPromise = this.page.waitForEvent('popup');
+    await this.page.locator(selector).nth(index).click({ timeout: DEFAULT_TIMEOUT });
+    return await popupPromise;
+  }
+
+  async clickFirstVisibleLink(selectors: string | string[]): Promise<{ href: string | null; text: string }> {
+    const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+
+    for (const selector of selectorList) {
+      const links = this.page.locator(selector);
+      const count = await links.count();
+
+      for (let index = 0; index < count; index++) {
+        const link = links.nth(index);
+        if (await link.isVisible()) {
+          const href = await link.getAttribute("href");
+          const text = (await link.innerText()).trim();
+          await link.click({ timeout: DEFAULT_TIMEOUT });
+          return { href, text };
+        }
+      }
+    }
+
+    throw new Error(`No visible link found for selectors "${selectorList.join('", "')}"`);
+  }
+
+  async fillOnPage(targetPage: Page, selector: string, value: string): Promise<void> {
+    logger.info(`Filling ${selector} on popup page`);
+    const field = targetPage.locator(selector);
+    await field.clear({ timeout: DEFAULT_TIMEOUT });
+    await field.fill(value, { timeout: DEFAULT_TIMEOUT });
+  }
+
+  async clickOnPage(targetPage: Page, selector: string): Promise<void> {
+    logger.info(`Clicking ${selector} on popup page`);
+    await targetPage.locator(selector).click({ timeout: DEFAULT_TIMEOUT });
+  }
+
+  async waitForVisibleOnPage(targetPage: Page, selector: string): Promise<void> {
+    logger.info(`Waiting for ${selector} on popup page`);
+    await targetPage.locator(selector).first().waitFor({ state: 'visible', timeout: DEFAULT_TIMEOUT });
+  }
+
+  async clickVisibleLinkByText(
+    targetPage: Page,
+    selector: string,
+    text: string,
+    expectedHref?: string
+  ): Promise<{ href: string | null; text: string }> {
+    const matches = targetPage.locator(selector).filter({ hasText: text });
+    await matches.first().waitFor({ state: 'visible', timeout: DEFAULT_TIMEOUT });
+
+    const count = await matches.count();
+    if (count !== 1) {
+      throw new Error(`Expected one visible link containing "${text}", found ${count}`);
+    }
+
+    const link = matches.first();
+    const href = await link.getAttribute('href');
+    const linkText = (await link.innerText()).trim();
+    if (expectedHref && !href?.includes(expectedHref)) {
+      throw new Error(`Expected link href to contain "${expectedHref}", found "${href ?? "none"}"`);
+    }
+
+    await link.click({ timeout: DEFAULT_TIMEOUT });
+
+    return { href, text: linkText };
+  }
+
+  async clickAndAcceptDialog(selector: string): Promise<string> {
+    const dialogPromise = this.page.waitForEvent('dialog').then(async (dialog) => {
+      const message = dialog.message();
+      await dialog.accept();
+      return message;
+    });
+
+    await this.page.locator(selector).click({ timeout: DEFAULT_TIMEOUT });
+    const message = await dialogPromise;
+    await this.page.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT });
+    logger.info(`Accepted browser dialog: ${message}`);
+    return message;
+  }
+
+  /**
+   * Accept the next browser dialog.
+   */
+  async acceptDialog(): Promise<void> {
+    const dialog = await this.page.waitForEvent('dialog');
+    await dialog.accept();
+  }
+
+  /**
    * Double click on an element
    * @param selector - The element selector
    */
@@ -72,6 +176,7 @@ export class PlaywrightWrapper {
    */
   async fill(selector: string, value: string): Promise<void> {
     logger.info(`Filling ${selector} with value: ${value}`);
+    await this.page.locator(selector).clear();
     await this.page.fill(selector, value, { timeout: DEFAULT_TIMEOUT });
   }
 
@@ -104,6 +209,19 @@ export class PlaywrightWrapper {
   async waitForHidden(selector: string, timeout = DEFAULT_TIMEOUT): Promise<void> {
     logger.info(`Waiting for ${selector} to be hidden`);
     await this.page.waitForSelector(selector, { state: 'hidden', timeout });
+  }
+
+  async waitForTextPattern(selector: string, pattern: string, timeout = DEFAULT_TIMEOUT): Promise<void> {
+    logger.info(`Waiting for ${selector} to match ${pattern}`);
+    await this.page.waitForFunction(
+      ({ targetSelector, textPattern }) => {
+        const element = document.querySelector(targetSelector);
+        const text = element?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+        return new RegExp(textPattern, 'i').test(text);
+      },
+      { targetSelector: selector, textPattern: pattern },
+      { timeout }
+    );
   }
 
   /**
@@ -162,9 +280,9 @@ export class PlaywrightWrapper {
    * Switch to a tab by index
    * @param index - The tab index
    */
-  async switchToTab(index: number): Promise<Page> {
+  async switchToTab(index: number): Promise<void> {
     logger.info(`Switching to tab index: ${index}`);
-    const pages = this.page.context().pages();
+    const pages = this.context.pages();
 
     if (index >= pages.length) {
       throw new Error(`Tab index out of bounds: ${index}, total tabs: ${pages.length}`);
@@ -172,7 +290,6 @@ export class PlaywrightWrapper {
 
     this.page = pages[index];
     await this.page.bringToFront();
-    return this.page;
   }
 
   /**
@@ -190,7 +307,7 @@ export class PlaywrightWrapper {
    * @param args - Arguments to pass to the script
    * @returns The result of script execution
    */
-  async executeScript<T>(script: string, ...args: unknown[]): Promise<T> {
+  async executeScript<T>(script: string, ...args: any[]): Promise<T> {
     logger.info('Executing JavaScript');
     return await this.page.evaluate(script, ...args);
   }
@@ -219,8 +336,10 @@ export class PlaywrightWrapper {
     await this.page.goForward({ waitUntil: 'networkidle' });
   }
 
-  async keyboardPress(selector: string, key: string): Promise<void> {
-    await this.page.locator(selector).focus({ timeout: DEFAULT_TIMEOUT });
+  async keyBoardpress(selector: string, key: string): Promise<void> {
+    await this.page.waitForSelector(selector, { state: 'visible' });
+    await this.page.locator(selector).focus()
     await this.page.keyboard.press(key);
   }
+
 }

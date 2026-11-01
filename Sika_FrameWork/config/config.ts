@@ -11,11 +11,12 @@ const parseBoolean = (value: string | undefined, fallback: boolean): boolean => 
   return value.toLowerCase() === 'true';
 };
 
-const BASE_URL = process.env.BASE_URL || 'http://leaftaps.com/opentaps/control/login';
+const BASE_URL = process.env.BASE_URL || 'https://leaftaps.com/opentaps/control/login';
 const BROWSER = (process.env.BROWSER || 'chrome').toLowerCase();
 const HEADLESS = parseBoolean(process.env.HEADLESS, false);
 const VIDEO_ENABLED = parseBoolean(process.env.VIDEO_ENABLED, true);
 const TRACE_ENABLED = parseBoolean(process.env.TRACE_ENABLED, true);
+const SCREENSHOT_EACH_STEP = parseBoolean(process.env.SCREENSHOT_EACH_STEP, true);
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 
 // Timeout values
@@ -64,7 +65,7 @@ const browserOptions: Record<string, LaunchOptions> = {
 // Screenshot, video, and trace options
 const screenshotOptions = {
   takeOnFailure: true,
-  takeOnSuccess: true,
+  takeOnSuccess: SCREENSHOT_EACH_STEP,
   path: './reports/screenshots/'
 };
 
